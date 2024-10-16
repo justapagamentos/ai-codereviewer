@@ -8,6 +8,10 @@ import minimatch from "minimatch";
 const GITHUB_TOKEN: string = core.getInput("GITHUB_TOKEN");
 const OPENAI_API_KEY: string = core.getInput("OPENAI_API_KEY");
 const OPENAI_API_MODEL: string = core.getInput("OPENAI_API_MODEL");
+const CODE_REVIEW_AI_PROMPT: string = core.getInput("CODE_REVIEW_AI_PROMPT");
+const CODE_REVIEW_AI_LANGUAGE: string = core.getInput(
+  "CODE_REVIEW_AI_LANGUAGE"
+);
 
 const octokit = new Octokit({ auth: GITHUB_TOKEN });
 
@@ -65,8 +69,8 @@ async function analyzeCode(
   for (const file of parsedDiff) {
     if (file.to === "/dev/null") continue; // Ignore deleted files
     for (const chunk of file.chunks) {
-      const prompt = createPrompt(file, chunk, prDetails);
-      const aiResponse = await getAIResponse(prompt);
+      const userPrompt = createUserPrompt(file, chunk, prDetails);
+      const aiResponse = await getAIResponse(userPrompt);
       if (aiResponse) {
         const newComments = createComment(file, chunk, aiResponse);
         if (newComments) {
@@ -78,7 +82,11 @@ async function analyzeCode(
   return comments;
 }
 
-function createPrompt(file: File, chunk: Chunk, prDetails: PRDetails): string {
+function createUserPrompt(
+  file: File,
+  chunk: Chunk,
+  prDetails: PRDetails
+): string {
   return `Your task is to review pull requests. Instructions:
 - Provide the response in following JSON format:  {"reviews": [{"lineNumber":  <line_number>, "reviewComment": "<review comment>"}]}
 - Do not give positive comments or compliments.
@@ -86,6 +94,7 @@ function createPrompt(file: File, chunk: Chunk, prDetails: PRDetails): string {
 - Write the comment in GitHub Markdown format.
 - Use the given description only for the overall context and only comment the code.
 - IMPORTANT: NEVER suggest adding comments to the code.
+- IMPORTANT: Comments should be in ${CODE_REVIEW_AI_LANGUAGE || "PT-BR"}.
 
 Review the following code diff in the file "${
     file.to
@@ -110,7 +119,7 @@ ${chunk.changes
 `;
 }
 
-async function getAIResponse(prompt: string): Promise<Array<{
+async function getAIResponse(userPrompt: string): Promise<Array<{
   lineNumber: string;
   reviewComment: string;
 }> | null> {
@@ -133,7 +142,11 @@ async function getAIResponse(prompt: string): Promise<Array<{
       messages: [
         {
           role: "system",
-          content: prompt,
+          content: CODE_REVIEW_AI_PROMPT,
+        },
+        {
+          role: "user",
+          content: userPrompt,
         },
       ],
     });
