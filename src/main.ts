@@ -125,6 +125,9 @@ async function getAIResponse(userPrompt: string): Promise<Array<{
   };
 
   try {
+    console.log("SYSTEM_PROMPT:", CODE_REVIEW_AI_PROMPT);
+    console.log("USER_PROMPT:", userPrompt);
+
     const response = await openai.chat.completions.create({
       ...queryConfig,
       // return JSON if the model supports it:
