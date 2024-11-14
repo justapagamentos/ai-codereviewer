@@ -69,7 +69,7 @@ async function analyzeCode(
   for (const file of parsedDiff) {
     if (file.to === "/dev/null") continue; // Ignore deleted files
     for (const chunk of file.chunks) {
-      const userPrompt = createUserPrompt(file, chunk, prDetails);
+      const userPrompt = createPrompt(file, chunk, prDetails);
       const aiResponse = await getAIResponse(userPrompt);
       if (aiResponse) {
         const newComments = createComment(file, chunk, aiResponse);
@@ -82,12 +82,27 @@ async function analyzeCode(
   return comments;
 }
 
-function createUserPrompt(
-  file: File,
-  chunk: Chunk,
-  prDetails: PRDetails
-): string {
+function createPrompt(file: File, chunk: Chunk, prDetails: PRDetails): string {
   return `
+ Você é um Engenheiro de Software com anos de experiência e deve revisar um pull request. O objetivo desta revisão é garantir que o código esteja limpo, eficiente e siga as melhores práticas. Por favor, analise os seguintes aspectos:
+
+Qualidade do Código: Verifique a manutenibilidade, clareza e aderência aos padrões de codificação. Destaque quaisquer áreas onde o código possa ser simplificado ou melhorado.
+Lógica e Funcionalidade: Verifique se a lógica implementada está alinhada com a funcionalidade descrita no pull request. Identifique possíveis erros lógicos ou casos extremos.
+Desempenho: Avalie se o código pode ser otimizado para melhorar o desempenho, especialmente em termos de uso de recursos ou tempo de execução.
+Segurança: Aponte quaisquer vulnerabilidades de segurança, como o manuseio inadequado de entradas, autenticação ou dados sensíveis.
+Testes: Revise os testes fornecidos para verificar a cobertura e a eficácia. Sugira casos de teste adicionais, se necessário.
+Documentação: Certifique-se de que os comentários e a documentação estão claros, precisos e úteis para futuros mantenedores.
+
+Por favor, forneça feedback de forma construtiva e específica, utilizando o português do Brasil. Além disso, evite repetições na revisão; se identificar um mesmo problema mais de uma vez, comente apenas uma vez.
+
+Sua tarefa é revisar pull requests. Instruções:
+- Forneça a resposta no seguinte formato JSON: {"reviews": [{"lineNumber": <número_da_linha>, "reviewComment": "<comentário_da_revisão>"}]}
+- Não faça comentários positivos ou elogios.
+- Forneça comentários e sugestões SOMENTE se houver algo a melhorar; caso contrário, "reviews" deve ser um array vazio.
+- Escreva o comentário no formato Markdown do GitHub.
+- Use a descrição fornecida apenas para contexto geral e comente apenas o código.
+- IMPORTANTE: NUNCA sugira adicionar comentários ao código
+
 Revise o seguinte diff de código no arquivo "${
     file.to
   }" e considere o título e a descrição do pull request ao escrever a resposta.
@@ -111,7 +126,7 @@ ${chunk.changes
 `;
 }
 
-async function getAIResponse(userPrompt: string): Promise<Array<{
+async function getAIResponse(prompt: string): Promise<Array<{
   lineNumber: string;
   reviewComment: string;
 }> | null> {
@@ -125,9 +140,6 @@ async function getAIResponse(userPrompt: string): Promise<Array<{
   };
 
   try {
-    console.log("SYSTEM_PROMPT:", CODE_REVIEW_AI_PROMPT);
-    console.log("USER_PROMPT:", userPrompt);
-
     const response = await openai.chat.completions.create({
       ...queryConfig,
       // return JSON if the model supports it:
@@ -137,11 +149,7 @@ async function getAIResponse(userPrompt: string): Promise<Array<{
       messages: [
         {
           role: "system",
-          content: CODE_REVIEW_AI_PROMPT,
-        },
-        {
-          role: "user",
-          content: userPrompt,
+          content: prompt,
         },
       ],
     });
