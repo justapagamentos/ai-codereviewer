@@ -87,27 +87,19 @@ function createUserPrompt(
   chunk: Chunk,
   prDetails: PRDetails
 ): string {
-  return `Your task is to review pull requests. Instructions:
-- Provide the response in following JSON format:  {"reviews": [{"lineNumber":  <line_number>, "reviewComment": "<review comment>"}]}
-- Do not give positive comments or compliments.
-- Provide comments and suggestions ONLY if there is something to improve, otherwise "reviews" should be an empty array.
-- Write the comment in GitHub Markdown format.
-- Use the given description only for the overall context and only comment the code.
-- IMPORTANT: NEVER suggest adding comments to the code.
-- IMPORTANT: Comments should be in ${CODE_REVIEW_AI_LANGUAGE || "PT-BR"}.
-
-Review the following code diff in the file "${
+  return `
+Revise o seguinte diff de código no arquivo "${
     file.to
-  }" and take the pull request title and description into account when writing the response.
-  
-Pull request title: ${prDetails.title}
-Pull request description:
+  }" e considere o título e a descrição do pull request ao escrever a resposta.
+
+Título do pull request: ${prDetails.title}
+Descrição do pull request:
 
 ---
 ${prDetails.description}
 ---
 
-Git diff to review:
+Git diff para revisão:
 
 \`\`\`diff
 ${chunk.content}
