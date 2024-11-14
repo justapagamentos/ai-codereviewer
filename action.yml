@@ -19,10 +19,6 @@ inputs:
     description: "Prompt to use for the code review AI."
     required: true
     default: "Review the code and provide feedback."
-  CODE_REVIEW_AI_LANGUAGE:
-    description: "Language to use for the code review AI."
-    required: false
-    default: "ENG"
 runs:
   using: "node16"
   main: "dist/index.js"

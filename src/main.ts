@@ -9,9 +9,6 @@ const GITHUB_TOKEN: string = core.getInput("GITHUB_TOKEN");
 const OPENAI_API_KEY: string = core.getInput("OPENAI_API_KEY");
 const OPENAI_API_MODEL: string = core.getInput("OPENAI_API_MODEL");
 const CODE_REVIEW_AI_PROMPT: string = core.getInput("CODE_REVIEW_AI_PROMPT");
-const CODE_REVIEW_AI_LANGUAGE: string = core.getInput(
-  "CODE_REVIEW_AI_LANGUAGE"
-);
 
 const octokit = new Octokit({ auth: GITHUB_TOKEN });
 
@@ -84,25 +81,6 @@ async function analyzeCode(
 
 function createPrompt(file: File, chunk: Chunk, prDetails: PRDetails): string {
   return `
- Você é um Engenheiro de Software com anos de experiência e deve revisar um pull request. O objetivo desta revisão é garantir que o código esteja limpo, eficiente e siga as melhores práticas. Por favor, analise os seguintes aspectos:
-
-Qualidade do Código: Verifique a manutenibilidade, clareza e aderência aos padrões de codificação. Destaque quaisquer áreas onde o código possa ser simplificado ou melhorado.
-Lógica e Funcionalidade: Verifique se a lógica implementada está alinhada com a funcionalidade descrita no pull request. Identifique possíveis erros lógicos ou casos extremos.
-Desempenho: Avalie se o código pode ser otimizado para melhorar o desempenho, especialmente em termos de uso de recursos ou tempo de execução.
-Segurança: Aponte quaisquer vulnerabilidades de segurança, como o manuseio inadequado de entradas, autenticação ou dados sensíveis.
-Testes: Revise os testes fornecidos para verificar a cobertura e a eficácia. Sugira casos de teste adicionais, se necessário.
-Documentação: Certifique-se de que os comentários e a documentação estão claros, precisos e úteis para futuros mantenedores.
-
-Por favor, forneça feedback de forma construtiva e específica, utilizando o português do Brasil. Além disso, evite repetições na revisão; se identificar um mesmo problema mais de uma vez, comente apenas uma vez.
-
-Sua tarefa é revisar pull requests. Instruções:
-- Forneça a resposta no seguinte formato JSON: {"reviews": [{"lineNumber": <número_da_linha>, "reviewComment": "<comentário_da_revisão>"}]}
-- Não faça comentários positivos ou elogios.
-- Forneça comentários e sugestões SOMENTE se houver algo a melhorar; caso contrário, "reviews" deve ser um array vazio.
-- Escreva o comentário no formato Markdown do GitHub.
-- Use a descrição fornecida apenas para contexto geral e comente apenas o código.
-- IMPORTANTE: NUNCA sugira adicionar comentários ao código
-
 Revise o seguinte diff de código no arquivo "${
     file.to
   }" e considere o título e a descrição do pull request ao escrever a resposta.
@@ -149,6 +127,10 @@ async function getAIResponse(prompt: string): Promise<Array<{
       messages: [
         {
           role: "system",
+          content: CODE_REVIEW_AI_PROMPT,
+        },
+        {
+          role: "user",
           content: prompt,
         },
       ],
