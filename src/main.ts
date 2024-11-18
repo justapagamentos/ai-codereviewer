@@ -81,9 +81,9 @@ async function analyzeCode(
 
 function createPrompt(file: File, chunk: Chunk, prDetails: PRDetails): string {
   return `
-Revise o seguinte diff de código no arquivo ${
+Revise o seguinte diff de código no arquivo "${
     file.to
-  } e considere o título e a descrição do pull request ao escrever a resposta.
+  }" e considere o título e a descrição do pull request ao escrever a resposta.
 
 Título do pull request: ${prDetails.title}
 Descrição do pull request:
