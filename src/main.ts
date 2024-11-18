@@ -127,7 +127,7 @@ async function getAIResponse(prompt: string): Promise<Array<{
       messages: [
         {
           role: "system",
-          content: CODE_REVIEW_AI_PROMPT,
+          content: `${CODE_REVIEW_AI_PROMPT}`,
         },
         {
           role: "user",
