@@ -94,6 +94,7 @@ function analyzeCode(parsedDiff, prDetails) {
                 continue; // Ignore deleted files
             for (const chunk of file.chunks) {
                 const userPrompt = createPrompt(file, chunk, prDetails);
+                console.log("USER_PROMPT:", userPrompt);
                 const aiResponse = yield getAIResponse(userPrompt);
                 if (aiResponse) {
                     const newComments = createComment(file, chunk, aiResponse);
@@ -107,8 +108,7 @@ function analyzeCode(parsedDiff, prDetails) {
     });
 }
 function createPrompt(file, chunk, prDetails) {
-    return `
-Revise o seguinte diff de código no arquivo "${file.to}" e considere o título e a descrição do pull request ao escrever a resposta.
+    return `Revise o seguinte diff de código no arquivo "${file.to}" e considere o título e a descrição do pull request ao escrever a resposta.
 
 Título do pull request: ${prDetails.title}
 Descrição do pull request:
@@ -140,12 +140,13 @@ function getAIResponse(prompt) {
             presence_penalty: 0,
         };
         try {
-            const response = yield openai.chat.completions.create(Object.assign(Object.assign(Object.assign({}, queryConfig), (OPENAI_API_MODEL === "gpt-4-1106-preview"
+            const response = yield openai.chat.completions.create(Object.assign(Object.assign(Object.assign({}, queryConfig), (OPENAI_API_MODEL === "gpt-4-1106-preview" ||
+                OPENAI_API_MODEL === "gpt-4o-mini"
                 ? { response_format: { type: "json_object" } }
                 : {})), { messages: [
                     {
                         role: "system",
-                        content: `${CODE_REVIEW_AI_PROMPT}`,
+                        content: CODE_REVIEW_AI_PROMPT,
                     },
                     {
                         role: "user",
@@ -153,6 +154,7 @@ function getAIResponse(prompt) {
                     },
                 ] }));
             const res = ((_b = (_a = response.choices[0].message) === null || _a === void 0 ? void 0 : _a.content) === null || _b === void 0 ? void 0 : _b.trim()) || "{}";
+            console.log("AI_RESPONSE:", res);
             return JSON.parse(res).reviews;
         }
         catch (error) {

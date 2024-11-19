@@ -67,6 +67,9 @@ async function analyzeCode(
     if (file.to === "/dev/null") continue; // Ignore deleted files
     for (const chunk of file.chunks) {
       const userPrompt = createPrompt(file, chunk, prDetails);
+
+      console.log("USER_PROMPT:", userPrompt);
+
       const aiResponse = await getAIResponse(userPrompt);
       if (aiResponse) {
         const newComments = createComment(file, chunk, aiResponse);
@@ -80,8 +83,7 @@ async function analyzeCode(
 }
 
 function createPrompt(file: File, chunk: Chunk, prDetails: PRDetails): string {
-  return `
-Revise o seguinte diff de código no arquivo "${
+  return `Revise o seguinte diff de código no arquivo "${
     file.to
   }" e considere o título e a descrição do pull request ao escrever a resposta.
 
@@ -127,7 +129,7 @@ async function getAIResponse(prompt: string): Promise<Array<{
       messages: [
         {
           role: "system",
-          content: `${CODE_REVIEW_AI_PROMPT}`,
+          content: CODE_REVIEW_AI_PROMPT,
         },
         {
           role: "user",
@@ -137,6 +139,9 @@ async function getAIResponse(prompt: string): Promise<Array<{
     });
 
     const res = response.choices[0].message?.content?.trim() || "{}";
+
+    console.log("AI_RESPONSE:", res);
+
     return JSON.parse(res).reviews;
   } catch (error) {
     console.error("Error:", error);
